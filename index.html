@@ -37,11 +37,11 @@ body {
 
 /* 건반 */
 .keyboard {
-  position: relative;
-  width: 420px;
-  height: 200px;
-  margin: 0 auto;
   display: flex;
+  justify-content: center;
+  position: relative;
+  height: 200px;
+  margin-top: 20px;
 }
 
 .white-key {
@@ -49,6 +49,7 @@ body {
   height: 200px;
   border: 1px solid black;
   background: white;
+  position: relative;
 }
 
 .black-key {
@@ -57,15 +58,10 @@ body {
   background: black;
   position: absolute;
   top: 0;
-  z-index: 3;
+  z-index: 5;
 }
 
-.black-key.csharp { left: 40px; }
-.black-key.dsharp { left: 100px; }
-.black-key.fsharp { left: 220px; }
-.black-key.gsharp { left: 280px; }
-.black-key.asharp { left: 340px; }
-
+/* 상태 */
 .correct { background: lightgreen !important; }
 .wrong { background: #ffcccc !important; }
 </style>
@@ -73,7 +69,7 @@ body {
 
 <body>
 
-<!-- 시작 화면 -->
+<!-- 시작 -->
 <div id="startPage" class="page active">
   <h2>🎵 단계 선택</h2>
   <button class="level-btn" onclick="startGame(1)">1단계 (C~E)</button>
@@ -81,30 +77,17 @@ body {
   <button class="level-btn" onclick="startGame(3)">3단계 (C~B)</button>
 </div>
 
-<!-- 게임 화면 -->
+<!-- 게임 -->
 <div id="gamePage" class="page">
   <h2>🎵 피아노 음이름 게임</h2>
   <div id="timer">⏱ 0.00초</div>
 
   <div class="notes" id="notes"></div>
 
-  <div class="keyboard">
-    <div class="white-key" data-note="C"></div>
-    <div class="white-key" data-note="D"></div>
-    <div class="white-key" data-note="E"></div>
-    <div class="white-key" data-note="F"></div>
-    <div class="white-key" data-note="G"></div>
-    <div class="white-key" data-note="A"></div>
-    <div class="white-key" data-note="B"></div>
+  <!-- 🎹 건반은 JS로 생성 -->
+  <div class="keyboard" id="keyboard"></div>
 
-    <div class="black-key csharp"></div>
-    <div class="black-key dsharp"></div>
-    <div class="black-key fsharp"></div>
-    <div class="black-key gsharp"></div>
-    <div class="black-key asharp"></div>
-  </div>
-
-  <br><br>
+  <br>
   <button onclick="goHome()">← 돌아가기</button>
 </div>
 
@@ -157,13 +140,11 @@ function checkGameComplete() {
     clearInterval(timerInterval);
 
     const elapsed = Date.now() - startTime;
-
     const seconds = Math.floor(elapsed / 1000);
     const cs = Math.floor((elapsed % 1000) / 10);
-
     const finalTime = `${seconds}.${cs.toString().padStart(2, '0')}`;
 
-    playSuccessSound(); // 🎉 success.mp3
+    playSuccessSound();
 
     setTimeout(() => {
       alert(`🎉 성공!\n플레이 시간: ${finalTime}초`);
@@ -173,30 +154,32 @@ function checkGameComplete() {
 
 /* 🎯 게임 시작 */
 function startGame(level) {
-  let notes;
 
+  let notes;
   if (level === 1) notes = ["C","D","E"];
   if (level === 2) notes = ["C","D","E","F","G"];
   if (level === 3) notes = ["C","D","E","F","G","A","B"];
 
   notes.sort(() => Math.random() - 0.5);
 
-  const container = document.getElementById("notes");
-  container.innerHTML = "";
+  const noteContainer = document.getElementById("notes");
+  const keyboard = document.getElementById("keyboard");
+
+  noteContainer.innerHTML = "";
+  keyboard.innerHTML = "";
 
   selected = null;
   startTime = null;
   clearInterval(timerInterval);
   document.getElementById("timer").innerText = "⏱ 0.00초";
 
+  /* 🎴 카드 생성 */
   notes.forEach(note => {
     const div = document.createElement("div");
     div.className = "note";
     div.innerText = note;
 
-    div.addEventListener("click", () => {
-
-      // ⏱ 첫 클릭 시 타이머 시작
+    div.onclick = () => {
       if (!startTime) startTimer();
 
       document.querySelectorAll(".note").forEach(n => n.classList.remove("selected"));
@@ -205,12 +188,17 @@ function startGame(level) {
       selected = div;
 
       playNoteSound(note);
-    });
+    };
 
-    container.appendChild(div);
+    noteContainer.appendChild(div);
   });
 
-  document.querySelectorAll(".white-key").forEach(key => {
+  /* 🎹 흰 건반 생성 */
+  notes.forEach((note, index) => {
+    const key = document.createElement("div");
+    key.className = "white-key";
+    key.dataset.note = note;
+
     key.onclick = () => {
       if (!selected) return;
 
@@ -228,6 +216,31 @@ function startGame(level) {
         setTimeout(() => key.classList.remove("wrong"), 500);
       }
     };
+
+    keyboard.appendChild(key);
+  });
+
+  /* 🎹 검은 건반 생성 */
+  const blackMap = {
+    "C": true,
+    "D": true,
+    "F": true,
+    "G": true,
+    "A": true
+  };
+
+  notes.forEach((note, index) => {
+    const nextNote = notes[index + 1];
+
+    if (blackMap[note] && nextNote) {
+      const black = document.createElement("div");
+      black.className = "black-key";
+
+      const left = (index * 60) + 40;
+      black.style.left = left + "px";
+
+      keyboard.appendChild(black);
+    }
   });
 
   document.getElementById("startPage").classList.remove("active");
@@ -240,10 +253,6 @@ function goHome() {
   document.getElementById("startPage").classList.add("active");
 
   clearInterval(timerInterval);
-
-  document.querySelectorAll(".white-key").forEach(key => {
-    key.classList.remove("correct");
-  });
 }
 </script>
 
