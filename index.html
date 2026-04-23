@@ -12,6 +12,18 @@ body { text-align:center; font-family:sans-serif; }
 
 .best { color:red; font-weight:bold; }
 
+.note {
+  margin:5px;
+  padding:10px;
+}
+
+.keyboard {
+  position:relative;
+  width:fit-content;
+  margin:20px auto;
+  height:200px;
+}
+
 .white-key {
   width:60px; height:200px;
   border:1px solid black;
@@ -24,26 +36,20 @@ body { text-align:center; font-family:sans-serif; }
   background:black;
   top:0;
 }
-.keyboard {
-  position:relative;
-  width:fit-content;
-  margin:20px auto;
-  height:200px;
-}
 </style>
 </head>
 
 <body>
 
-<!-- 🎯 이름 입력 -->
+<!-- 이름 -->
 <div id="startPage" class="page active">
   <h2>이름 입력</h2>
-  <input id="username" placeholder="이름 입력">
+  <input id="username">
   <br><br>
   <button onclick="goLevel()">시작</button>
 </div>
 
-<!-- 🎯 단계 선택 -->
+<!-- 단계 -->
 <div id="levelPage" class="page">
   <h2>단계 선택</h2>
   <button onclick="startGame(1)">1단계</button>
@@ -51,15 +57,16 @@ body { text-align:center; font-family:sans-serif; }
   <button onclick="startGame(3)">3단계</button>
 </div>
 
-<!-- 🎮 게임 -->
+<!-- 게임 -->
 <div id="gamePage" class="page">
   <h2 id="playerName"></h2>
-  <div id="timer">0.00</div>
+  <div id="timer">⏱ 0.00초</div>
+
   <div id="notes"></div>
   <div id="keyboard" class="keyboard"></div>
 </div>
 
-<!-- 🎉 결과 -->
+<!-- 결과 -->
 <div id="resultPage" class="page">
   <h2>결과</h2>
   <div id="records"></div>
@@ -67,25 +74,48 @@ body { text-align:center; font-family:sans-serif; }
 </div>
 
 <script>
-let name = "";
-let startTime;
+let name="";
+let selected=null;
+let startTime=null;
+let timerInterval=null;
 
-/* 이름 → 단계 */
+/* 🔊 사운드 */
+function playSound(file){
+  const audio=new Audio(file);
+  audio.currentTime=0;
+  audio.play().catch(()=>{});
+}
+
+/* 페이지 이동 */
 function goLevel(){
-  name = document.getElementById("username").value;
+  name=document.getElementById("username").value;
   if(!name) return alert("이름 입력");
 
   document.getElementById("startPage").classList.remove("active");
   document.getElementById("levelPage").classList.add("active");
 }
 
-/* 게임 시작 */
+/* ⏱ 타이머 시작 */
+function startTimer(){
+  startTime=Date.now();
+
+  timerInterval=setInterval(()=>{
+    const t=Date.now()-startTime;
+    const s=Math.floor(t/1000);
+    const cs=Math.floor((t%1000)/10);
+
+    document.getElementById("timer").innerText=
+      `⏱ ${s}.${cs.toString().padStart(2,'0')}초`;
+  },50);
+}
+
+/* 🎯 게임 시작 */
 function startGame(level){
 
   document.getElementById("levelPage").classList.remove("active");
   document.getElementById("gamePage").classList.add("active");
 
-  document.getElementById("playerName").innerText = name;
+  document.getElementById("playerName").innerText=name;
 
   let card, keys;
 
@@ -110,35 +140,43 @@ function startGame(level){
   notesDiv.innerHTML="";
   keyboard.innerHTML="";
 
-  startTime=Date.now();
+  selected=null;
+  clearInterval(timerInterval);
+  document.getElementById("timer").innerText="⏱ 0.00초";
 
-  /* 카드 */
-  let selected=null;
-
+  /* 🎴 카드 */
   shuffled.forEach(n=>{
-    const el=document.createElement("button");
-    el.innerText=n;
+    const btn=document.createElement("button");
+    btn.className="note";
+    btn.innerText=n;
 
-    el.onclick=()=>{
-      selected=n;
+    btn.onclick=()=>{
+      if(!startTime) startTimer(); // ⭐ 타이머 시작
+
+      selected=btn;
+      playSound(`sounds/${n.toLowerCase()}.m4a`);
     };
 
-    notesDiv.appendChild(el);
+    notesDiv.appendChild(btn);
   });
 
-  /* 건반 */
+  /* 🎹 건반 */
   keys.forEach((n,i)=>{
     const key=document.createElement("div");
     key.className="white-key";
 
     key.onclick=()=>{
-      if(selected===n){
+      if(!selected) return;
+
+      if(selected.innerText===n){
         key.style.background="lightgreen";
+
+        playSound("sounds/right.m4a");
+
+        selected.remove();
         selected=null;
 
-        if(document.querySelectorAll("button").length===0){
-          finish();
-        }
+        checkComplete();
       }
     };
 
@@ -158,10 +196,26 @@ function startGame(level){
   });
 }
 
-/* 🎉 종료 */
-function finish(){
-  const time=(Date.now()-startTime)/1000;
+/* 🎉 완료 */
+function checkComplete(){
+  if(document.querySelectorAll(".note").length===0){
+    clearInterval(timerInterval);
 
+    const t=Date.now()-startTime;
+    const sec=(t/1000);
+
+    playSound("sounds/success.mp3");
+
+    saveRecord(sec);
+
+    setTimeout(()=>{
+      showResult();
+    },300);
+  }
+}
+
+/* 저장 */
+function saveRecord(time){
   const today=new Date().toLocaleDateString();
 
   let data=JSON.parse(localStorage.getItem(name))||[];
@@ -169,30 +223,28 @@ function finish(){
   data.push({date:today,time:time});
 
   localStorage.setItem(name,JSON.stringify(data));
-
-  showResult(data);
-
-  document.getElementById("gamePage").classList.remove("active");
-  document.getElementById("resultPage").classList.add("active");
 }
 
-/* 📊 결과 */
-function showResult(data){
+/* 결과 */
+function showResult(){
+  document.getElementById("gamePage").classList.remove("active");
+  document.getElementById("resultPage").classList.add("active");
+
+  const data=JSON.parse(localStorage.getItem(name))||[];
   const div=document.getElementById("records");
   div.innerHTML="";
 
   const best=Math.min(...data.map(d=>d.time));
 
   data.forEach(d=>{
-    const p=document.createElement("div");
-
-    p.innerText=`${d.date} - ${d.time.toFixed(2)}초`;
+    const el=document.createElement("div");
+    el.innerText=`${d.date} - ${d.time.toFixed(2)}초`;
 
     if(d.time===best){
-      p.classList.add("best");
+      el.classList.add("best");
     }
 
-    div.appendChild(p);
+    div.appendChild(el);
   });
 }
 </script>
