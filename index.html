@@ -11,18 +11,15 @@ body {
   margin-top: 30px;
 }
 
-/* 페이지 */
 .page { display: none; }
 .active { display: block; }
 
-/* 버튼 */
 .level-btn {
   padding: 15px 25px;
   margin: 10px;
   font-size: 18px;
 }
 
-/* 카드 */
 .notes { margin-bottom: 40px; }
 
 .note {
@@ -35,24 +32,25 @@ body {
 
 .note.selected { background: #ffd966; }
 
-/* 🎹 건반 */
+/* 🎹 핵심 구조 */
 .keyboard {
   position: relative;
-  display: flex;
-  justify-content: center;
+  width: fit-content; /* ⭐ 핵심 */
+  margin: 20px auto;
   height: 200px;
-  margin-top: 20px;
 }
 
+/* 흰 건반 */
 .white-key {
   width: 60px;
   height: 200px;
   border: 1px solid black;
   background: white;
+  float: left;
   box-sizing: border-box;
 }
 
-/* ⭐ 핵심: 흰건반 위에 겹치게 */
+/* 검은 건반 */
 .black-key {
   position: absolute;
   width: 40px;
@@ -62,7 +60,6 @@ body {
   z-index: 10;
 }
 
-/* 상태 */
 .correct { background: lightgreen !important; }
 .wrong { background: #ffcccc !important; }
 </style>
@@ -70,21 +67,18 @@ body {
 
 <body>
 
-<!-- 시작 -->
 <div id="startPage" class="page active">
   <h2>🎵 단계 선택</h2>
-  <button class="level-btn" onclick="startGame(1)">1단계 (C~E)</button>
-  <button class="level-btn" onclick="startGame(2)">2단계 (C~G)</button>
-  <button class="level-btn" onclick="startGame(3)">3단계 (C~B)</button>
+  <button class="level-btn" onclick="startGame(1)">1단계</button>
+  <button class="level-btn" onclick="startGame(2)">2단계</button>
+  <button class="level-btn" onclick="startGame(3)">3단계</button>
 </div>
 
-<!-- 게임 -->
 <div id="gamePage" class="page">
   <h2>🎵 피아노 음이름 게임</h2>
   <div id="timer">⏱ 0.00초</div>
 
   <div class="notes" id="notes"></div>
-
   <div class="keyboard" id="keyboard"></div>
 
   <br>
@@ -93,56 +87,50 @@ body {
 
 <script>
 let selected = null;
-
-/* 타이머 */
 let startTime = null;
 let timerInterval = null;
 
-/* 사운드 */
+/* 🔊 사운드 */
 function playNoteSound(note) {
   new Audio(`sounds/${note.toLowerCase()}.m4a`).play();
 }
-
 function playCorrectSound() {
   new Audio(`sounds/right.m4a`).play();
 }
-
 function playSuccessSound() {
   new Audio(`sounds/success.mp3`).play();
 }
 
-/* 타이머 */
+/* ⏱ 타이머 */
 function startTimer() {
   startTime = Date.now();
-
   timerInterval = setInterval(() => {
-    const elapsed = Date.now() - startTime;
-    const sec = Math.floor(elapsed / 1000);
-    const cs = Math.floor((elapsed % 1000) / 10);
-
+    const t = Date.now() - startTime;
+    const s = Math.floor(t / 1000);
+    const cs = Math.floor((t % 1000) / 10);
     document.getElementById("timer").innerText =
-      `⏱ ${sec}.${cs.toString().padStart(2, '0')}초`;
+      `⏱ ${s}.${cs.toString().padStart(2,'0')}초`;
   }, 50);
 }
 
-/* 성공 체크 */
+/* 🎉 완료 */
 function checkGameComplete() {
   if (document.querySelectorAll(".note").length === 0) {
     clearInterval(timerInterval);
 
-    const elapsed = Date.now() - startTime;
-    const sec = Math.floor(elapsed / 1000);
-    const cs = Math.floor((elapsed % 1000) / 10);
+    const t = Date.now() - startTime;
+    const s = Math.floor(t / 1000);
+    const cs = Math.floor((t % 1000) / 10);
 
     playSuccessSound();
 
     setTimeout(() => {
-      alert(`🎉 성공!\n플레이 시간: ${sec}.${cs.toString().padStart(2,'0')}초`);
+      alert(`🎉 성공!\n${s}.${cs.toString().padStart(2,'0')}초`);
     }, 300);
   }
 }
 
-/* 게임 시작 */
+/* 🎯 게임 */
 function startGame(level) {
 
   let notes;
@@ -209,7 +197,7 @@ function startGame(level) {
     keyboard.appendChild(key);
   });
 
-  /* 검은 건반 (정확한 위치 계산) */
+  /* 🎹 검은 건반 (완전 정확 위치) */
   const blackPattern = {
     "C": true,
     "D": true,
@@ -225,7 +213,7 @@ function startGame(level) {
       const black = document.createElement("div");
       black.className = "black-key";
 
-      // ⭐ 핵심 위치 계산 (흰건반 중앙 기준)
+      // ⭐ 완전 정확 공식
       const left = (i * 60) + 60 - 20;
       black.style.left = left + "px";
 
