@@ -222,6 +222,21 @@ function startGame(lv){
     el.innerText=n;
 
     el.onclick=()=>{
+  if(!startTime) startTimer();
+
+  // ⭐ 눌림 애니메이션
+  el.classList.add("pressed");
+  setTimeout(()=>{
+    el.classList.remove("pressed");
+  },100);
+
+  document.querySelectorAll(".note").forEach(e=>e.classList.remove("selected"));
+  el.classList.add("selected");
+
+  selected=el;
+
+  playSound(`sounds/${n.toLowerCase()}.m4a`);
+};
       if(!startTime) startTimer();
 
       document.querySelectorAll(".note").forEach(e=>e.classList.remove("selected"));
