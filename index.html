@@ -35,11 +35,11 @@ body {
 
 .note.selected { background: #ffd966; }
 
-/* 건반 */
+/* 🎹 건반 */
 .keyboard {
+  position: relative;
   display: flex;
   justify-content: center;
-  position: relative;
   height: 200px;
   margin-top: 20px;
 }
@@ -49,16 +49,17 @@ body {
   height: 200px;
   border: 1px solid black;
   background: white;
-  position: relative;
+  box-sizing: border-box;
 }
 
+/* ⭐ 핵심: 흰건반 위에 겹치게 */
 .black-key {
+  position: absolute;
   width: 40px;
   height: 120px;
   background: black;
-  position: absolute;
   top: 0;
-  z-index: 5;
+  z-index: 10;
 }
 
 /* 상태 */
@@ -84,7 +85,6 @@ body {
 
   <div class="notes" id="notes"></div>
 
-  <!-- 🎹 건반은 JS로 생성 -->
   <div class="keyboard" id="keyboard"></div>
 
   <br>
@@ -94,65 +94,55 @@ body {
 <script>
 let selected = null;
 
-/* ⏱ 타이머 */
+/* 타이머 */
 let startTime = null;
 let timerInterval = null;
 
-/* 🔊 소리 */
+/* 사운드 */
 function playNoteSound(note) {
-  const audio = new Audio(`sounds/${note.toLowerCase()}.m4a`);
-  audio.currentTime = 0;
-  audio.play();
+  new Audio(`sounds/${note.toLowerCase()}.m4a`).play();
 }
 
 function playCorrectSound() {
-  const audio = new Audio(`sounds/right.m4a`);
-  audio.currentTime = 0;
-  audio.play();
+  new Audio(`sounds/right.m4a`).play();
 }
 
 function playSuccessSound() {
-  const audio = new Audio(`sounds/success.mp3`);
-  audio.currentTime = 0;
-  audio.play();
+  new Audio(`sounds/success.mp3`).play();
 }
 
-/* ⏱ 타이머 시작 */
+/* 타이머 */
 function startTimer() {
   startTime = Date.now();
 
   timerInterval = setInterval(() => {
     const elapsed = Date.now() - startTime;
-
-    const seconds = Math.floor(elapsed / 1000);
+    const sec = Math.floor(elapsed / 1000);
     const cs = Math.floor((elapsed % 1000) / 10);
 
     document.getElementById("timer").innerText =
-      `⏱ ${seconds}.${cs.toString().padStart(2, '0')}초`;
+      `⏱ ${sec}.${cs.toString().padStart(2, '0')}초`;
   }, 50);
 }
 
-/* 🎉 완료 체크 */
+/* 성공 체크 */
 function checkGameComplete() {
-  const remaining = document.querySelectorAll(".note").length;
-
-  if (remaining === 0) {
+  if (document.querySelectorAll(".note").length === 0) {
     clearInterval(timerInterval);
 
     const elapsed = Date.now() - startTime;
-    const seconds = Math.floor(elapsed / 1000);
+    const sec = Math.floor(elapsed / 1000);
     const cs = Math.floor((elapsed % 1000) / 10);
-    const finalTime = `${seconds}.${cs.toString().padStart(2, '0')}`;
 
     playSuccessSound();
 
     setTimeout(() => {
-      alert(`🎉 성공!\n플레이 시간: ${finalTime}초`);
+      alert(`🎉 성공!\n플레이 시간: ${sec}.${cs.toString().padStart(2,'0')}초`);
     }, 300);
   }
 }
 
-/* 🎯 게임 시작 */
+/* 게임 시작 */
 function startGame(level) {
 
   let notes;
@@ -162,10 +152,10 @@ function startGame(level) {
 
   notes.sort(() => Math.random() - 0.5);
 
-  const noteContainer = document.getElementById("notes");
+  const noteBox = document.getElementById("notes");
   const keyboard = document.getElementById("keyboard");
 
-  noteContainer.innerHTML = "";
+  noteBox.innerHTML = "";
   keyboard.innerHTML = "";
 
   selected = null;
@@ -173,28 +163,28 @@ function startGame(level) {
   clearInterval(timerInterval);
   document.getElementById("timer").innerText = "⏱ 0.00초";
 
-  /* 🎴 카드 생성 */
+  /* 카드 */
   notes.forEach(note => {
-    const div = document.createElement("div");
-    div.className = "note";
-    div.innerText = note;
+    const el = document.createElement("div");
+    el.className = "note";
+    el.innerText = note;
 
-    div.onclick = () => {
+    el.onclick = () => {
       if (!startTime) startTimer();
 
       document.querySelectorAll(".note").forEach(n => n.classList.remove("selected"));
 
-      div.classList.add("selected");
-      selected = div;
+      el.classList.add("selected");
+      selected = el;
 
       playNoteSound(note);
     };
 
-    noteContainer.appendChild(div);
+    noteBox.appendChild(el);
   });
 
-  /* 🎹 흰 건반 생성 */
-  notes.forEach((note, index) => {
+  /* 흰 건반 */
+  notes.forEach((note, i) => {
     const key = document.createElement("div");
     key.className = "white-key";
     key.dataset.note = note;
@@ -204,7 +194,6 @@ function startGame(level) {
 
       if (selected.innerText === key.dataset.note) {
         key.classList.add("correct");
-
         playCorrectSound();
 
         selected.remove();
@@ -213,15 +202,15 @@ function startGame(level) {
         checkGameComplete();
       } else {
         key.classList.add("wrong");
-        setTimeout(() => key.classList.remove("wrong"), 500);
+        setTimeout(() => key.classList.remove("wrong"), 400);
       }
     };
 
     keyboard.appendChild(key);
   });
 
-  /* 🎹 검은 건반 생성 */
-  const blackMap = {
+  /* 검은 건반 (정확한 위치 계산) */
+  const blackPattern = {
     "C": true,
     "D": true,
     "F": true,
@@ -229,14 +218,15 @@ function startGame(level) {
     "A": true
   };
 
-  notes.forEach((note, index) => {
-    const nextNote = notes[index + 1];
+  notes.forEach((note, i) => {
+    const next = notes[i + 1];
 
-    if (blackMap[note] && nextNote) {
+    if (blackPattern[note] && next) {
       const black = document.createElement("div");
       black.className = "black-key";
 
-      const left = (index * 60) + 40;
+      // ⭐ 핵심 위치 계산 (흰건반 중앙 기준)
+      const left = (i * 60) + 60 - 20;
       black.style.left = left + "px";
 
       keyboard.appendChild(black);
@@ -247,11 +237,10 @@ function startGame(level) {
   document.getElementById("gamePage").classList.add("active");
 }
 
-/* 🔙 돌아가기 */
+/* 돌아가기 */
 function goHome() {
   document.getElementById("gamePage").classList.remove("active");
   document.getElementById("startPage").classList.add("active");
-
   clearInterval(timerInterval);
 }
 </script>
