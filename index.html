@@ -10,14 +10,12 @@ body { text-align:center; font-family:sans-serif; }
 .page { display:none; }
 .active { display:block; }
 
-/* ⭐ 이름 입력 크게 */
 #username {
   font-size: 24px;
   padding: 15px;
   width: 300px;
 }
 
-/* 카드 */
 .note {
   display:inline-block;
   margin:5px;
@@ -31,7 +29,6 @@ body { text-align:center; font-family:sans-serif; }
   background:#ffd966;
 }
 
-/* 건반 */
 .keyboard {
   position:relative;
   width:fit-content;
@@ -52,7 +49,6 @@ body { text-align:center; font-family:sans-serif; }
   top:0;
 }
 
-/* 기록 */
 .current {
   font-weight:bold;
 }
@@ -61,7 +57,6 @@ body { text-align:center; font-family:sans-serif; }
 
 <body>
 
-<!-- 이름 -->
 <div id="startPage" class="page active">
   <h2>이름 입력</h2>
   <input id="username" placeholder="이름 입력">
@@ -69,7 +64,6 @@ body { text-align:center; font-family:sans-serif; }
   <button onclick="goLevel()">시작</button>
 </div>
 
-<!-- 단계 -->
 <div id="levelPage" class="page">
   <h2>단계 선택</h2>
   <button onclick="startGame(1)">1단계</button>
@@ -77,7 +71,6 @@ body { text-align:center; font-family:sans-serif; }
   <button onclick="startGame(3)">3단계</button>
 </div>
 
-<!-- 게임 -->
 <div id="gamePage" class="page">
   <h2 id="playerName"></h2>
   <div id="timer">⏱ 0.00초</div>
@@ -86,7 +79,6 @@ body { text-align:center; font-family:sans-serif; }
   <div id="keyboard" class="keyboard"></div>
 </div>
 
-<!-- 결과 -->
 <div id="resultPage" class="page">
   <h2 id="resultTitle"></h2>
   <div id="records"></div>
@@ -101,12 +93,10 @@ let startTime=null;
 let timerInterval=null;
 let currentTime=0;
 
-/* 🔊 사운드 */
 function playSound(file){
   new Audio(file).play().catch(()=>{});
 }
 
-/* 이동 */
 function goLevel(){
   name=document.getElementById("username").value;
   if(!name) return alert("이름 입력");
@@ -115,7 +105,6 @@ function goLevel(){
   document.getElementById("levelPage").classList.add("active");
 }
 
-/* 타이머 */
 function startTimer(){
   startTime=Date.now();
 
@@ -129,7 +118,6 @@ function startTimer(){
   },50);
 }
 
-/* 게임 시작 */
 function startGame(lv){
   level = lv;
 
@@ -165,7 +153,6 @@ function startGame(lv){
   clearInterval(timerInterval);
   document.getElementById("timer").innerText="⏱ 0.00초";
 
-  /* 카드 */
   shuffled.forEach(n=>{
     const el=document.createElement("div");
     el.className="note";
@@ -185,7 +172,6 @@ function startGame(lv){
     notesDiv.appendChild(el);
   });
 
-  /* 건반 */
   keys.forEach((n,i)=>{
     const key=document.createElement("div");
     key.className="white-key";
@@ -208,7 +194,6 @@ function startGame(lv){
     keyboard.appendChild(key);
   });
 
-  /* 검은건반 */
   const black=["C","D","F","G","A"];
 
   keys.forEach((n,i)=>{
@@ -221,7 +206,6 @@ function startGame(lv){
   });
 }
 
-/* 완료 */
 function checkComplete(){
   if(document.querySelectorAll(".note").length===0){
     clearInterval(timerInterval);
@@ -237,7 +221,6 @@ function checkComplete(){
   }
 }
 
-/* 저장 (⭐ 날짜 + 시각 포함) */
 function saveRecord(){
   const key = name + "_level" + level;
 
@@ -254,7 +237,6 @@ function saveRecord(){
   localStorage.setItem(key, JSON.stringify(data));
 }
 
-/* 결과 */
 function showResult(){
 
   document.getElementById("gamePage").classList.remove("active");
@@ -264,19 +246,24 @@ function showResult(){
     `${name} - ${level}단계 기록`;
 
   const key = name + "_level" + level;
-  const data=JSON.parse(localStorage.getItem(key))||[];
+  let data=JSON.parse(localStorage.getItem(key))||[];
+
+  /* ⭐ 안정 처리 */
+  data = data.filter(d => d && typeof d.time === "number");
 
   const div=document.getElementById("records");
   div.innerHTML="";
 
-  const best = Math.min(...data.map(d => d.time));
+  const best = data.length > 0
+    ? Math.min(...data.map(d => d.time))
+    : null;
 
   data.forEach(d=>{
     const el=document.createElement("div");
 
     let text = `${d.date} ${d.clock} - ${d.time.toFixed(2)}초`;
 
-    if(d.time === best){
+    if(best !== null && d.time === best){
       text += " 🥇";
     }
 
