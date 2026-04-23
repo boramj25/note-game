@@ -32,15 +32,14 @@ body {
 
 .note.selected { background: #ffd966; }
 
-/* 🎹 핵심 구조 */
+/* 🎹 건반 */
 .keyboard {
   position: relative;
-  width: fit-content; /* ⭐ 핵심 */
+  width: fit-content;
   margin: 20px auto;
   height: 200px;
 }
 
-/* 흰 건반 */
 .white-key {
   width: 60px;
   height: 200px;
@@ -50,7 +49,6 @@ body {
   box-sizing: border-box;
 }
 
-/* 검은 건반 */
 .black-key {
   position: absolute;
   width: 40px;
@@ -108,6 +106,7 @@ function startTimer() {
     const t = Date.now() - startTime;
     const s = Math.floor(t / 1000);
     const cs = Math.floor((t % 1000) / 10);
+
     document.getElementById("timer").innerText =
       `⏱ ${s}.${cs.toString().padStart(2,'0')}초`;
   }, 50);
@@ -130,7 +129,7 @@ function checkGameComplete() {
   }
 }
 
-/* 🎯 게임 */
+/* 🎯 게임 시작 */
 function startGame(level) {
 
   let notes;
@@ -138,7 +137,8 @@ function startGame(level) {
   if (level === 2) notes = ["C","D","E","F","G"];
   if (level === 3) notes = ["C","D","E","F","G","A","B"];
 
-  notes.sort(() => Math.random() - 0.5);
+  /* 👉 카드만 랜덤 */
+  const shuffled = [...notes].sort(() => Math.random() - 0.5);
 
   const noteBox = document.getElementById("notes");
   const keyboard = document.getElementById("keyboard");
@@ -151,8 +151,8 @@ function startGame(level) {
   clearInterval(timerInterval);
   document.getElementById("timer").innerText = "⏱ 0.00초";
 
-  /* 카드 */
-  notes.forEach(note => {
+  /* 🎴 카드 생성 */
+  shuffled.forEach(note => {
     const el = document.createElement("div");
     el.className = "note";
     el.innerText = note;
@@ -171,7 +171,7 @@ function startGame(level) {
     noteBox.appendChild(el);
   });
 
-  /* 흰 건반 */
+  /* 🎹 건반은 항상 고정 순서 */
   notes.forEach((note, i) => {
     const key = document.createElement("div");
     key.className = "white-key";
@@ -197,24 +197,17 @@ function startGame(level) {
     keyboard.appendChild(key);
   });
 
-  /* 🎹 검은 건반 (완전 정확 위치) */
-  const blackPattern = {
-    "C": true,
-    "D": true,
-    "F": true,
-    "G": true,
-    "A": true
-  };
+  /* 🎹 검은 건반 (고정 위치) */
+  const blackPattern = ["C","D","F","G","A"];
 
   notes.forEach((note, i) => {
     const next = notes[i + 1];
 
-    if (blackPattern[note] && next) {
+    if (blackPattern.includes(note) && next) {
       const black = document.createElement("div");
       black.className = "black-key";
 
-      // ⭐ 완전 정확 공식
-      const left = (i * 60) + 60 - 20;
+      const left = (i * 60) + 40; // ✔ 안정된 위치
       black.style.left = left + "px";
 
       keyboard.appendChild(black);
