@@ -5,50 +5,101 @@
 <title>피아노 게임</title>
 
 <style>
-body { text-align:center; font-family:sans-serif; }
+body {
+  font-family: sans-serif;
+  background: #120a8f;
+  color: #f5f5f5;
 
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+
+  height: 100vh;
+  margin: 0;
+}
+
+/* 전체 컨테이너 (중앙보다 약간 아래) */
+.container {
+  margin-top: 120px;
+  text-align: center;
+}
+
+/* 페이지 */
 .page { display:none; }
 .active { display:block; }
 
-#username {
-  font-size: 24px;
-  padding: 15px;
-  width: 300px;
+/* 제목 */
+h2 {
+  color: #ffffff;
 }
 
+/* 버튼 */
+button {
+  font-size: 1.5em;
+  padding: 15px 25px;
+  margin: 10px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  background: white;
+  color: #120a8f;
+}
+
+/* 입력창 */
+#username {
+  font-size: 1.5em;
+  padding: 15px;
+  width: 350px;
+}
+
+/* 카드 */
 .note {
   display:inline-block;
-  margin:5px;
-  padding:10px 15px;
+  margin:8px;
+  padding:15px 20px;
   background:#eee;
-  border:1px solid #ccc;
+  color:black;
+  border-radius:8px;
   cursor:pointer;
+  font-size:1.5em;
 }
 
 .note.selected {
   background:#ffd966;
 }
 
+/* 건반 */
 .keyboard {
   position:relative;
   width:fit-content;
-  margin:20px auto;
-  height:200px;
+  margin:40px auto;
+  height:220px;
 }
 
 .white-key {
-  width:60px; height:200px;
+  width:70px;
+  height:220px;
   border:1px solid black;
+  background:white;
   float:left;
 }
 
 .black-key {
   position:absolute;
-  width:40px; height:120px;
+  width:45px;
+  height:130px;
   background:black;
   top:0;
 }
 
+/* 타이머 */
+#timer {
+  font-size:1.8em;
+  margin:20px;
+  color:#ffffff;
+}
+
+/* 기록 */
 .current {
   font-weight:bold;
 }
@@ -56,7 +107,9 @@ body { text-align:center; font-family:sans-serif; }
 </head>
 
 <body>
+<div class="container">
 
+<!-- 이름 -->
 <div id="startPage" class="page active">
   <h2>이름 입력</h2>
   <input id="username" placeholder="이름 입력">
@@ -64,6 +117,7 @@ body { text-align:center; font-family:sans-serif; }
   <button onclick="goLevel()">시작</button>
 </div>
 
+<!-- 단계 -->
 <div id="levelPage" class="page">
   <h2>단계 선택</h2>
   <button onclick="startGame(1)">1단계</button>
@@ -71,6 +125,7 @@ body { text-align:center; font-family:sans-serif; }
   <button onclick="startGame(3)">3단계</button>
 </div>
 
+<!-- 게임 -->
 <div id="gamePage" class="page">
   <h2 id="playerName"></h2>
   <div id="timer">⏱ 0.00초</div>
@@ -79,10 +134,13 @@ body { text-align:center; font-family:sans-serif; }
   <div id="keyboard" class="keyboard"></div>
 </div>
 
+<!-- 결과 -->
 <div id="resultPage" class="page">
   <h2 id="resultTitle"></h2>
   <div id="records"></div>
   <button onclick="location.reload()">다시하기</button>
+</div>
+
 </div>
 
 <script>
@@ -93,10 +151,12 @@ let startTime=null;
 let timerInterval=null;
 let currentTime=0;
 
+/* 사운드 */
 function playSound(file){
   new Audio(file).play().catch(()=>{});
 }
 
+/* 페이지 이동 */
 function goLevel(){
   name=document.getElementById("username").value;
   if(!name) return alert("이름 입력");
@@ -105,6 +165,7 @@ function goLevel(){
   document.getElementById("levelPage").classList.add("active");
 }
 
+/* 타이머 */
 function startTimer(){
   startTime=Date.now();
 
@@ -118,6 +179,7 @@ function startTimer(){
   },50);
 }
 
+/* 게임 시작 */
 function startGame(lv){
   level = lv;
 
@@ -153,6 +215,7 @@ function startGame(lv){
   clearInterval(timerInterval);
   document.getElementById("timer").innerText="⏱ 0.00초";
 
+  /* 카드 */
   shuffled.forEach(n=>{
     const el=document.createElement("div");
     el.className="note";
@@ -172,6 +235,7 @@ function startGame(lv){
     notesDiv.appendChild(el);
   });
 
+  /* 건반 */
   keys.forEach((n,i)=>{
     const key=document.createElement("div");
     key.className="white-key";
@@ -194,18 +258,20 @@ function startGame(lv){
     keyboard.appendChild(key);
   });
 
+  /* 검은건반 */
   const black=["C","D","F","G","A"];
 
   keys.forEach((n,i)=>{
     if(black.includes(n)){
       const b=document.createElement("div");
       b.className="black-key";
-      b.style.left=(i*60+40)+"px";
+      b.style.left=(i*70+45)+"px";
       keyboard.appendChild(b);
     }
   });
 }
 
+/* 완료 */
 function checkComplete(){
   if(document.querySelectorAll(".note").length===0){
     clearInterval(timerInterval);
@@ -221,6 +287,7 @@ function checkComplete(){
   }
 }
 
+/* 저장 */
 function saveRecord(){
   const key = name + "_level" + level;
 
@@ -237,6 +304,7 @@ function saveRecord(){
   localStorage.setItem(key, JSON.stringify(data));
 }
 
+/* 결과 */
 function showResult(){
 
   document.getElementById("gamePage").classList.remove("active");
@@ -248,7 +316,6 @@ function showResult(){
   const key = name + "_level" + level;
   let data=JSON.parse(localStorage.getItem(key))||[];
 
-  /* ⭐ 안정 처리 */
   data = data.filter(d => d && typeof d.time === "number");
 
   const div=document.getElementById("records");
