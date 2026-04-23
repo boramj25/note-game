@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>피아노 음이름 게임</title>
+
+<style>
+body {
+  font-family: sans-serif;
+  text-align: center;
+  margin-top: 30px;
+}
+
+/* 페이지 */
+.page { display: none; }
+.active { display: block; }
+
+/* 버튼 */
+.level-btn {
+  padding: 15px 25px;
+  margin: 10px;
+  font-size: 18px;
+}
+
+/* 카드 */
+.notes { margin-bottom: 40px; }
+
+.note {
+  display: inline-block;
+  padding: 10px 15px;
+  margin: 5px;
+  background: #f0f0f0;
+  border: 1px solid #ccc;
+}
+
+.note.selected { background: #ffd966; }
+
+/* 건반 */
+.keyboard {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  height: 200px;
+  margin-top: 20px;
+}
+
+.white-key {
+  width: 60px;
+  height: 200px;
+  border: 1px solid black;
+  background: white;
+  position: relative;
+}
+
+.black-key {
+  width: 40px;
+  height: 120px;
+  background: black;
+  position: absolute;
+  top: 0;
+  z-index: 5;
+}
+
+/* 상태 */
+.correct { background: lightgreen !important; }
+.wrong { background: #ffcccc !important; }
+</style>
+</head>
+
+<body>
+
+<!-- 시작 -->
+<div id="startPage" class="page active">
+  <h2>🎵 단계 선택</h2>
+  <button class="level-btn" onclick="startGame(1)">1단계 (C~E)</button>
+  <button class="level-btn" onclick="startGame(2)">2단계 (C~G)</button>
+  <button class="level-btn" onclick="startGame(3)">3단계 (C~B)</button>
+</div>
+
+<!-- 게임 -->
+<div id="gamePage" class="page">
+  <h2>🎵 피아노 음이름 게임</h2>
+  <div id="timer">⏱ 0.00초</div>
+
+  <div class="notes" id="notes"></div>
+
+  <!-- 🎹 건반은 JS로 생성 -->
+  <div class="keyboard" id="keyboard"></div>
+
+  <br>
+  <button onclick="goHome()">← 돌아가기</button>
+</div>
+
+<script>
+let selected = null;
+
+/* ⏱ 타이머 */
+let startTime = null;
+let timerInterval = null;
+
+/* 🔊 소리 */
+function playNoteSound(note) {
+  const audio = new Audio(`sounds/${note.toLowerCase()}.m4a`);
+  audio.currentTime = 0;
+  audio.play();
+}
+
+function playCorrectSound() {
+  const audio = new Audio(`sounds/right.m4a`);
+  audio.currentTime = 0;
+  audio.play();
+}
+
+function playSuccessSound() {
+  const audio = new Audio(`sounds/success.mp3`);
+  audio.currentTime = 0;
+  audio.play();
+}
+
+/* ⏱ 타이머 시작 */
+function startTimer() {
+  startTime = Date.now();
+
+  timerInterval = setInterval(() => {
+    const elapsed = Date.now() - startTime;
+
+    const seconds = Math.floor(elapsed / 1000);
+    const cs = Math.floor((elapsed % 1000) / 10);
+
+    document.getElementById("timer").innerText =
+      `⏱ ${seconds}.${cs.toString().padStart(2, '0')}초`;
+  }, 50);
+}
+
+/* 🎉 완료 체크 */
+function checkGameComplete() {
+  const remaining = document.querySelectorAll(".note").length;
+
+  if (remaining === 0) {
+    clearInterval(timerInterval);
+
+    const elapsed = Date.now() - startTime;
+    const seconds = Math.floor(elapsed / 1000);
+    const cs = Math.floor((elapsed % 1000) / 10);
+    const finalTime = `${seconds}.${cs.toString().padStart(2, '0')}`;
+
+    playSuccessSound();
+
+    setTimeout(() => {
+      alert(`🎉 성공!\n플레이 시간: ${finalTime}초`);
+    }, 300);
+  }
+}
+
+/* 🎯 게임 시작 */
+function startGame(level) {
+
+  let notes;
+  if (level === 1) notes = ["C","D","E"];
+  if (level === 2) notes = ["C","D","E","F","G"];
+  if (level === 3) notes = ["C","D","E","F","G","A","B"];
+
+  notes.sort(() => Math.random() - 0.5);
+
+  const noteContainer = document.getElementById("notes");
+  const keyboard = document.getElementById("keyboard");
+
+  noteContainer.innerHTML = "";
+  keyboard.innerHTML = "";
+
+  selected = null;
+  startTime = null;
+  clearInterval(timerInterval);
+  document.getElementById("timer").innerText = "⏱ 0.00초";
+
+  /* 🎴 카드 생성 */
+  notes.forEach(note => {
+    const div = document.createElement("div");
+    div.className = "note";
+    div.innerText = note;
+
+    div.onclick = () => {
+      if (!startTime) startTimer();
+
+      document.querySelectorAll(".note").forEach(n => n.classList.remove("selected"));
+
+      div.classList.add("selected");
+      selected = div;
+
+      playNoteSound(note);
+    };
+
+    noteContainer.appendChild(div);
+  });
+
+  /* 🎹 흰 건반 생성 */
+  notes.forEach((note, index) => {
+    const key = document.createElement("div");
+    key.className = "white-key";
+    key.dataset.note = note;
+
+    key.onclick = () => {
+      if (!selected) return;
+
+      if (selected.innerText === key.dataset.note) {
+        key.classList.add("correct");
+
+        playCorrectSound();
+
+        selected.remove();
+        selected = null;
+
+        checkGameComplete();
+      } else {
+        key.classList.add("wrong");
+        setTimeout(() => key.classList.remove("wrong"), 500);
+      }
+    };
+
+    keyboard.appendChild(key);
+  });
+
+  /* 🎹 검은 건반 생성 */
+  const blackMap = {
+    "C": true,
+    "D": true,
+    "F": true,
+    "G": true,
+    "A": true
+  };
+
+  notes.forEach((note, index) => {
+    const nextNote = notes[index + 1];
+
+    if (blackMap[note] && nextNote) {
+      const black = document.createElement("div");
+      black.className = "black-key";
+
+      const left = (index * 60) + 40;
+      black.style.left = left + "px";
+
+      keyboard.appendChild(black);
+    }
+  });
+
+  document.getElementById("startPage").classList.remove("active");
+  document.getElementById("gamePage").classList.add("active");
+}
+
+/* 🔙 돌아가기 */
+function goHome() {
+  document.getElementById("gamePage").classList.remove("active");
+  document.getElementById("startPage").classList.add("active");
+
+  clearInterval(timerInterval);
+}
+</script>
+
+</body>
+</html>
