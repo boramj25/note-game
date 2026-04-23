@@ -10,9 +10,14 @@ body { text-align:center; font-family:sans-serif; }
 .page { display:none; }
 .active { display:block; }
 
-.best { color:red; font-weight:bold; }
+/* ⭐ 이름 입력 크게 */
+#username {
+  font-size: 24px;
+  padding: 15px;
+  width: 300px;
+}
 
-/* 🎴 카드 (가로 정렬 복구) */
+/* 카드 */
 .note {
   display:inline-block;
   margin:5px;
@@ -26,7 +31,7 @@ body { text-align:center; font-family:sans-serif; }
   background:#ffd966;
 }
 
-/* 🎹 건반 */
+/* 건반 */
 .keyboard {
   position:relative;
   width:fit-content;
@@ -46,18 +51,25 @@ body { text-align:center; font-family:sans-serif; }
   background:black;
   top:0;
 }
+
+/* 기록 */
+.current {
+  font-weight: bold;
+}
 </style>
 </head>
 
 <body>
 
+<!-- 이름 -->
 <div id="startPage" class="page active">
   <h2>이름 입력</h2>
-  <input id="username">
+  <input id="username" placeholder="이름 입력">
   <br><br>
   <button onclick="goLevel()">시작</button>
 </div>
 
+<!-- 단계 -->
 <div id="levelPage" class="page">
   <h2>단계 선택</h2>
   <button onclick="startGame(1)">1단계</button>
@@ -65,6 +77,7 @@ body { text-align:center; font-family:sans-serif; }
   <button onclick="startGame(3)">3단계</button>
 </div>
 
+<!-- 게임 -->
 <div id="gamePage" class="page">
   <h2 id="playerName"></h2>
   <div id="timer">⏱ 0.00초</div>
@@ -73,25 +86,27 @@ body { text-align:center; font-family:sans-serif; }
   <div id="keyboard" class="keyboard"></div>
 </div>
 
+<!-- 결과 -->
 <div id="resultPage" class="page">
-  <h2>결과</h2>
+  <h2 id="resultTitle"></h2>
   <div id="records"></div>
   <button onclick="location.reload()">다시하기</button>
 </div>
 
 <script>
 let name="";
+let level=1;
 let selected=null;
 let startTime=null;
-let startClock=null;
 let timerInterval=null;
+let currentTime=0;
 
+/* 🔊 사운드 */
 function playSound(file){
-  const audio=new Audio(file);
-  audio.currentTime=0;
-  audio.play().catch(()=>{});
+  new Audio(file).play().catch(()=>{});
 }
 
+/* 이동 */
 function goLevel(){
   name=document.getElementById("username").value;
   if(!name) return alert("이름 입력");
@@ -100,9 +115,9 @@ function goLevel(){
   document.getElementById("levelPage").classList.add("active");
 }
 
+/* 타이머 */
 function startTimer(){
   startTime=Date.now();
-  startClock=new Date();
 
   timerInterval=setInterval(()=>{
     const t=Date.now()-startTime;
@@ -114,12 +129,14 @@ function startTimer(){
   },50);
 }
 
-function startGame(level){
+/* 게임 시작 */
+function startGame(lv){
+  level = lv;
 
   document.getElementById("levelPage").classList.remove("active");
   document.getElementById("gamePage").classList.add("active");
 
-  document.getElementById("playerName").innerText=name;
+  document.getElementById("playerName").innerText = `${name} - ${level}단계`;
 
   let card, keys;
 
@@ -148,7 +165,7 @@ function startGame(level){
   clearInterval(timerInterval);
   document.getElementById("timer").innerText="⏱ 0.00초";
 
-  /* 🎴 카드 */
+  /* 카드 */
   shuffled.forEach(n=>{
     const el=document.createElement("div");
     el.className="note";
@@ -168,7 +185,7 @@ function startGame(level){
     notesDiv.appendChild(el);
   });
 
-  /* 🎹 건반 */
+  /* 건반 */
   keys.forEach((n,i)=>{
     const key=document.createElement("div");
     key.className="white-key";
@@ -204,48 +221,63 @@ function startGame(level){
   });
 }
 
+/* 완료 */
 function checkComplete(){
   if(document.querySelectorAll(".note").length===0){
     clearInterval(timerInterval);
 
     const t=Date.now()-startTime;
-    const sec=t/1000;
+    currentTime=t/1000;
 
     playSound("sounds/success.mp3");
 
-    saveRecord(sec);
+    saveRecord();
 
     setTimeout(showResult,300);
   }
 }
 
-function saveRecord(time){
-  const date=new Date().toLocaleDateString();
-  const clock=startClock.toLocaleTimeString();
+/* 저장 */
+function saveRecord(){
+  const key = name + "_level" + level;
 
-  let data=JSON.parse(localStorage.getItem(name))||[];
+  let data=JSON.parse(localStorage.getItem(key))||[];
 
-  data.push({date,clock,time});
+  data.push(currentTime);
 
-  localStorage.setItem(name,JSON.stringify(data));
+  localStorage.setItem(key, JSON.stringify(data));
 }
 
+/* 결과 */
 function showResult(){
+
   document.getElementById("gamePage").classList.remove("active");
   document.getElementById("resultPage").classList.add("active");
 
-  const data=JSON.parse(localStorage.getItem(name))||[];
+  document.getElementById("resultTitle").innerText =
+    `${name} - ${level}단계 기록`;
+
+  const key = name + "_level" + level;
+  const data=JSON.parse(localStorage.getItem(key))||[];
+
   const div=document.getElementById("records");
   div.innerHTML="";
 
-  const best=Math.min(...data.map(d=>d.time));
+  const best=Math.min(...data);
 
-  data.forEach(d=>{
+  data.forEach((t,i)=>{
     const el=document.createElement("div");
-    el.innerText=`${d.date} ${d.clock} - ${d.time.toFixed(2)}초`;
 
-    if(d.time===best){
-      el.classList.add("best");
+    let text = `${t.toFixed(2)}초`;
+
+    if(t === best){
+      text += " 🥇";
+    }
+
+    el.innerText = text;
+
+    if(t === currentTime){
+      el.classList.add("current");
     }
 
     div.appendChild(el);
