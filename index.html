@@ -265,24 +265,23 @@ function showResult(){
 
   const best=Math.min(...data);
 
-  data.forEach((t,i)=>{
-    const el=document.createElement("div");
+ data.forEach(d=>{
+  const el=document.createElement("div");
 
-    let text = `${t.toFixed(2)}초`;
+  let text = `${d.date} ${d.clock} - ${d.time.toFixed(2)}초`;
 
-    if(t === best){
-      text += " 🥇";
-    }
+  if(d.time === best){
+    text += " 🥇";
+  }
 
-    el.innerText = text;
+  el.innerText = text;
 
-    if(t === currentTime){
-      el.classList.add("current");
-    }
+  if(d.time === currentTime){
+    el.classList.add("current");
+  }
 
-    div.appendChild(el);
-  });
-}
+  div.appendChild(el);
+});
 </script>
 
 </body>
