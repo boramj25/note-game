@@ -12,8 +12,9 @@ body { text-align:center; font-family:sans-serif; }
 
 .best { color:red; font-weight:bold; }
 
-/* 카드 */
+/* 🎴 카드 (가로 정렬 복구) */
 .note {
+  display:inline-block;
   margin:5px;
   padding:10px 15px;
   background:#eee;
@@ -21,12 +22,11 @@ body { text-align:center; font-family:sans-serif; }
   cursor:pointer;
 }
 
-/* ⭐ 선택된 카드 */
 .note.selected {
   background:#ffd966;
 }
 
-/* 건반 */
+/* 🎹 건반 */
 .keyboard {
   position:relative;
   width:fit-content;
@@ -51,7 +51,6 @@ body { text-align:center; font-family:sans-serif; }
 
 <body>
 
-<!-- 이름 -->
 <div id="startPage" class="page active">
   <h2>이름 입력</h2>
   <input id="username">
@@ -59,7 +58,6 @@ body { text-align:center; font-family:sans-serif; }
   <button onclick="goLevel()">시작</button>
 </div>
 
-<!-- 단계 -->
 <div id="levelPage" class="page">
   <h2>단계 선택</h2>
   <button onclick="startGame(1)">1단계</button>
@@ -67,7 +65,6 @@ body { text-align:center; font-family:sans-serif; }
   <button onclick="startGame(3)">3단계</button>
 </div>
 
-<!-- 게임 -->
 <div id="gamePage" class="page">
   <h2 id="playerName"></h2>
   <div id="timer">⏱ 0.00초</div>
@@ -76,7 +73,6 @@ body { text-align:center; font-family:sans-serif; }
   <div id="keyboard" class="keyboard"></div>
 </div>
 
-<!-- 결과 -->
 <div id="resultPage" class="page">
   <h2>결과</h2>
   <div id="records"></div>
@@ -90,14 +86,12 @@ let startTime=null;
 let startClock=null;
 let timerInterval=null;
 
-/* 🔊 사운드 */
 function playSound(file){
   const audio=new Audio(file);
   audio.currentTime=0;
   audio.play().catch(()=>{});
 }
 
-/* 페이지 이동 */
 function goLevel(){
   name=document.getElementById("username").value;
   if(!name) return alert("이름 입력");
@@ -106,10 +100,9 @@ function goLevel(){
   document.getElementById("levelPage").classList.add("active");
 }
 
-/* ⏱ 타이머 */
 function startTimer(){
   startTime=Date.now();
-  startClock=new Date(); // ⭐ 시작 시각 저장
+  startClock=new Date();
 
   timerInterval=setInterval(()=>{
     const t=Date.now()-startTime;
@@ -121,7 +114,6 @@ function startTimer(){
   },50);
 }
 
-/* 🎯 게임 시작 */
 function startGame(level){
 
   document.getElementById("levelPage").classList.remove("active");
@@ -158,23 +150,22 @@ function startGame(level){
 
   /* 🎴 카드 */
   shuffled.forEach(n=>{
-    const btn=document.createElement("div");
-    btn.className="note";
-    btn.innerText=n;
+    const el=document.createElement("div");
+    el.className="note";
+    el.innerText=n;
 
-    btn.onclick=()=>{
+    el.onclick=()=>{
       if(!startTime) startTimer();
 
-      // ⭐ 선택 표시
-      document.querySelectorAll(".note").forEach(el=>el.classList.remove("selected"));
-      btn.classList.add("selected");
+      document.querySelectorAll(".note").forEach(e=>e.classList.remove("selected"));
+      el.classList.add("selected");
 
-      selected=btn;
+      selected=el;
 
       playSound(`sounds/${n.toLowerCase()}.m4a`);
     };
 
-    notesDiv.appendChild(btn);
+    notesDiv.appendChild(el);
   });
 
   /* 🎹 건반 */
@@ -213,13 +204,12 @@ function startGame(level){
   });
 }
 
-/* 🎉 완료 */
 function checkComplete(){
   if(document.querySelectorAll(".note").length===0){
     clearInterval(timerInterval);
 
     const t=Date.now()-startTime;
-    const sec=(t/1000);
+    const sec=t/1000;
 
     playSound("sounds/success.mp3");
 
@@ -229,25 +219,17 @@ function checkComplete(){
   }
 }
 
-/* 💾 저장 */
 function saveRecord(time){
   const date=new Date().toLocaleDateString();
-
-  // ⭐ 시작 시각
-  const timeStr=startClock.toLocaleTimeString();
+  const clock=startClock.toLocaleTimeString();
 
   let data=JSON.parse(localStorage.getItem(name))||[];
 
-  data.push({
-    date:date,
-    clock:timeStr,
-    time:time
-  });
+  data.push({date,clock,time});
 
   localStorage.setItem(name,JSON.stringify(data));
 }
 
-/* 📊 결과 */
 function showResult(){
   document.getElementById("gamePage").classList.remove("active");
   document.getElementById("resultPage").classList.add("active");
@@ -260,9 +242,7 @@ function showResult(){
 
   data.forEach(d=>{
     const el=document.createElement("div");
-
-    el.innerText =
-      `${d.date} ${d.clock} - ${d.time.toFixed(2)}초`;
+    el.innerText=`${d.date} ${d.clock} - ${d.time.toFixed(2)}초`;
 
     if(d.time===best){
       el.classList.add("best");
