@@ -12,11 +12,21 @@ body { text-align:center; font-family:sans-serif; }
 
 .best { color:red; font-weight:bold; }
 
+/* 카드 */
 .note {
   margin:5px;
-  padding:10px;
+  padding:10px 15px;
+  background:#eee;
+  border:1px solid #ccc;
+  cursor:pointer;
 }
 
+/* ⭐ 선택된 카드 */
+.note.selected {
+  background:#ffd966;
+}
+
+/* 건반 */
 .keyboard {
   position:relative;
   width:fit-content;
@@ -77,6 +87,7 @@ body { text-align:center; font-family:sans-serif; }
 let name="";
 let selected=null;
 let startTime=null;
+let startClock=null;
 let timerInterval=null;
 
 /* 🔊 사운드 */
@@ -95,16 +106,17 @@ function goLevel(){
   document.getElementById("levelPage").classList.add("active");
 }
 
-/* ⏱ 타이머 시작 */
+/* ⏱ 타이머 */
 function startTimer(){
   startTime=Date.now();
+  startClock=new Date(); // ⭐ 시작 시각 저장
 
   timerInterval=setInterval(()=>{
     const t=Date.now()-startTime;
     const s=Math.floor(t/1000);
     const cs=Math.floor((t%1000)/10);
 
-    document.getElementById("timer").innerText=
+    document.getElementById("timer").innerText =
       `⏱ ${s}.${cs.toString().padStart(2,'0')}초`;
   },50);
 }
@@ -146,14 +158,19 @@ function startGame(level){
 
   /* 🎴 카드 */
   shuffled.forEach(n=>{
-    const btn=document.createElement("button");
+    const btn=document.createElement("div");
     btn.className="note";
     btn.innerText=n;
 
     btn.onclick=()=>{
-      if(!startTime) startTimer(); // ⭐ 타이머 시작
+      if(!startTime) startTimer();
+
+      // ⭐ 선택 표시
+      document.querySelectorAll(".note").forEach(el=>el.classList.remove("selected"));
+      btn.classList.add("selected");
 
       selected=btn;
+
       playSound(`sounds/${n.toLowerCase()}.m4a`);
     };
 
@@ -208,24 +225,29 @@ function checkComplete(){
 
     saveRecord(sec);
 
-    setTimeout(()=>{
-      showResult();
-    },300);
+    setTimeout(showResult,300);
   }
 }
 
-/* 저장 */
+/* 💾 저장 */
 function saveRecord(time){
-  const today=new Date().toLocaleDateString();
+  const date=new Date().toLocaleDateString();
+
+  // ⭐ 시작 시각
+  const timeStr=startClock.toLocaleTimeString();
 
   let data=JSON.parse(localStorage.getItem(name))||[];
 
-  data.push({date:today,time:time});
+  data.push({
+    date:date,
+    clock:timeStr,
+    time:time
+  });
 
   localStorage.setItem(name,JSON.stringify(data));
 }
 
-/* 결과 */
+/* 📊 결과 */
 function showResult(){
   document.getElementById("gamePage").classList.remove("active");
   document.getElementById("resultPage").classList.add("active");
@@ -238,7 +260,9 @@ function showResult(){
 
   data.forEach(d=>{
     const el=document.createElement("div");
-    el.innerText=`${d.date} - ${d.time.toFixed(2)}초`;
+
+    el.innerText =
+      `${d.date} ${d.clock} - ${d.time.toFixed(2)}초`;
 
     if(d.time===best){
       el.classList.add("best");
