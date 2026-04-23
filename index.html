@@ -54,7 +54,7 @@ body { text-align:center; font-family:sans-serif; }
 
 /* 기록 */
 .current {
-  font-weight: bold;
+  font-weight:bold;
 }
 </style>
 </head>
@@ -237,13 +237,19 @@ function checkComplete(){
   }
 }
 
-/* 저장 */
+/* 저장 (⭐ 날짜 + 시각 포함) */
 function saveRecord(){
   const key = name + "_level" + level;
 
   let data=JSON.parse(localStorage.getItem(key))||[];
 
-  data.push(currentTime);
+  const now = new Date();
+
+  data.push({
+    time: currentTime,
+    date: now.toLocaleDateString(),
+    clock: now.toLocaleTimeString()
+  });
 
   localStorage.setItem(key, JSON.stringify(data));
 }
@@ -263,25 +269,26 @@ function showResult(){
   const div=document.getElementById("records");
   div.innerHTML="";
 
-  const best=Math.min(...data);
+  const best = Math.min(...data.map(d => d.time));
 
- data.forEach(d=>{
-  const el=document.createElement("div");
+  data.forEach(d=>{
+    const el=document.createElement("div");
 
-  let text = `${d.date} ${d.clock} - ${d.time.toFixed(2)}초`;
+    let text = `${d.date} ${d.clock} - ${d.time.toFixed(2)}초`;
 
-  if(d.time === best){
-    text += " 🥇";
-  }
+    if(d.time === best){
+      text += " 🥇";
+    }
 
-  el.innerText = text;
+    el.innerText = text;
 
-  if(d.time === currentTime){
-    el.classList.add("current");
-  }
+    if(d.time === currentTime){
+      el.classList.add("current");
+    }
 
-  div.appendChild(el);
-});
+    div.appendChild(el);
+  });
+}
 </script>
 
 </body>
