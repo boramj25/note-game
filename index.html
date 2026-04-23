@@ -12,7 +12,7 @@ body { text-align:center; font-family:sans-serif; }
 
 .best { color:red; font-weight:bold; }
 
-/* 🎴 카드 (가로 정렬 복구) */
+/* 🎴 카드 */
 .note {
   display:inline-block;
   margin:5px;
@@ -20,10 +20,18 @@ body { text-align:center; font-family:sans-serif; }
   background:#eee;
   border:1px solid #ccc;
   cursor:pointer;
+  position: relative;
 }
 
 .note.selected {
   background:#ffd966;
+}
+
+/* 드래그 중 */
+.note.dragging {
+  opacity:0.7;
+  position:absolute;
+  z-index:1000;
 }
 
 /* 🎹 건반 */
@@ -73,25 +81,20 @@ body { text-align:center; font-family:sans-serif; }
   <div id="keyboard" class="keyboard"></div>
 </div>
 
-<div id="resultPage" class="page">
-  <h2>결과</h2>
-  <div id="records"></div>
-  <button onclick="location.reload()">다시하기</button>
-</div>
-
 <script>
 let name="";
 let selected=null;
 let startTime=null;
-let startClock=null;
 let timerInterval=null;
 
+/* 🔊 사운드 */
 function playSound(file){
   const audio=new Audio(file);
   audio.currentTime=0;
   audio.play().catch(()=>{});
 }
 
+/* 페이지 */
 function goLevel(){
   name=document.getElementById("username").value;
   if(!name) return alert("이름 입력");
@@ -100,9 +103,9 @@ function goLevel(){
   document.getElementById("levelPage").classList.add("active");
 }
 
+/* 타이머 */
 function startTimer(){
   startTime=Date.now();
-  startClock=new Date();
 
   timerInterval=setInterval(()=>{
     const t=Date.now()-startTime;
@@ -114,12 +117,11 @@ function startTimer(){
   },50);
 }
 
+/* 🎯 게임 시작 */
 function startGame(level){
 
   document.getElementById("levelPage").classList.remove("active");
   document.getElementById("gamePage").classList.add("active");
-
-  document.getElementById("playerName").innerText=name;
 
   let card, keys;
 
@@ -154,7 +156,12 @@ function startGame(level){
     el.className="note";
     el.innerText=n;
 
+    let offsetX, offsetY, moved=false;
+
+    /* 클릭 */
     el.onclick=()=>{
+      if(moved) return; // 드래그 후 클릭 방지
+
       if(!startTime) startTimer();
 
       document.querySelectorAll(".note").forEach(e=>e.classList.remove("selected"));
@@ -165,6 +172,38 @@ function startGame(level){
       playSound(`sounds/${n.toLowerCase()}.m4a`);
     };
 
+    /* 드래그 시작 */
+    el.addEventListener("touchstart", e=>{
+      const t=e.touches[0];
+
+      moved=false;
+
+      offsetX=t.clientX - el.getBoundingClientRect().left;
+      offsetY=t.clientY - el.getBoundingClientRect().top;
+
+      el.classList.add("dragging");
+    });
+
+    /* 드래그 이동 */
+    el.addEventListener("touchmove", e=>{
+      const t=e.touches[0];
+      moved=true;
+
+      el.style.left=(t.clientX-offsetX)+"px";
+      el.style.top=(t.clientY-offsetY)+"px";
+    });
+
+    /* 드롭 */
+    el.addEventListener("touchend", e=>{
+      el.classList.remove("dragging");
+
+      const t=e.changedTouches[0];
+
+      checkDrop(el, t.clientX, t.clientY);
+
+      setTimeout(()=>moved=false,50);
+    });
+
     notesDiv.appendChild(el);
   });
 
@@ -172,6 +211,7 @@ function startGame(level){
   keys.forEach((n,i)=>{
     const key=document.createElement("div");
     key.className="white-key";
+    key.dataset.note=n;
 
     key.onclick=()=>{
       if(!selected) return;
@@ -204,52 +244,41 @@ function startGame(level){
   });
 }
 
+/* 드롭 판정 */
+function checkDrop(card, x, y){
+  const keys=document.querySelectorAll(".white-key");
+
+  keys.forEach(key=>{
+    const r=key.getBoundingClientRect();
+
+    if(x>r.left && x<r.right && y>r.top && y<r.bottom){
+      if(card.innerText===key.dataset.note){
+        key.style.background="lightgreen";
+
+        playSound("sounds/right.m4a");
+
+        card.remove();
+
+        checkComplete();
+      }
+    }
+  });
+
+  card.style.left="";
+  card.style.top="";
+}
+
+/* 완료 */
 function checkComplete(){
   if(document.querySelectorAll(".note").length===0){
     clearInterval(timerInterval);
 
-    const t=Date.now()-startTime;
-    const sec=t/1000;
-
     playSound("sounds/success.mp3");
 
-    saveRecord(sec);
-
-    setTimeout(showResult,300);
+    setTimeout(()=>{
+      alert("🎉 성공!");
+    },300);
   }
-}
-
-function saveRecord(time){
-  const date=new Date().toLocaleDateString();
-  const clock=startClock.toLocaleTimeString();
-
-  let data=JSON.parse(localStorage.getItem(name))||[];
-
-  data.push({date,clock,time});
-
-  localStorage.setItem(name,JSON.stringify(data));
-}
-
-function showResult(){
-  document.getElementById("gamePage").classList.remove("active");
-  document.getElementById("resultPage").classList.add("active");
-
-  const data=JSON.parse(localStorage.getItem(name))||[];
-  const div=document.getElementById("records");
-  div.innerHTML="";
-
-  const best=Math.min(...data.map(d=>d.time));
-
-  data.forEach(d=>{
-    const el=document.createElement("div");
-    el.innerText=`${d.date} ${d.clock} - ${d.time.toFixed(2)}초`;
-
-    if(d.time===best){
-      el.classList.add("best");
-    }
-
-    div.appendChild(el);
-  });
 }
 </script>
 
