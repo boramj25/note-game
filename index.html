@@ -9,7 +9,7 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --bg: #0e0e12;
+    --bg: #fdfaec;
     --surface: #18181f;
     --surface2: #22222c;
     --accent: #e8c96d;
@@ -151,7 +151,7 @@
 
   .keyboard {
     position: relative;
-    height: 160px;
+    height: 200px;
     width: 100%;
     max-width: 440px;
     user-select: none;
@@ -554,7 +554,6 @@ function startGame() {
   document.getElementById('display-name').textContent = state.playerName;
   document.getElementById('score-correct').textContent = '0';
   showScreen('game');
-  buildAnswerButtons();
   nextQuestion();
 }
 
@@ -625,14 +624,20 @@ function flashKey(targetNote, type) {
 }
 
 // ══ ANSWER BUTTONS ══
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 function buildAnswerButtons() {
   const cfg = LEVELS[state.level];
   const grid = document.getElementById('answer-grid');
   grid.innerHTML = '';
-  // Always show natural + accidental buttons for Lv2/3; Lv1 only naturals
-  const btns = cfg.buttons;
-  const cols = btns.length <= 7 ? 7 : 6;
-  grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+  const btns = shuffleArray(cfg.buttons);
   btns.forEach(note => {
     const btn = document.createElement('button');
     btn.className = 'ans-btn';
@@ -654,11 +659,8 @@ function nextQuestion() {
   const note = state.queue[state.current];
   state.answered = false;
 
-  // reset buttons
-  document.querySelectorAll('.ans-btn').forEach(b => {
-    b.classList.remove('correct','wrong');
-    b.disabled = false;
-  });
+  // rebuild buttons shuffled each question
+  buildAnswerButtons();
   document.getElementById('feedback').textContent = '';
   document.getElementById('feedback').className = 'feedback-row';
   document.getElementById('score-count').textContent = `${state.correctCount}/${state.current}`;
