@@ -680,11 +680,11 @@ function startTimer(seconds) {
   bar.style.background = 'var(--accent)';
   state.timer = setInterval(() => {
     elapsed += 100;
-    const pct = Math.max(0, 100 - (elapsed / (seconds * 1000)) * 100);
+    const pct = Math.max(0, 100 - (elapsed / (seconds * 2000)) * 100);
     bar.style.width = pct + '%';
     if (pct < 30) bar.style.background = 'var(--wrong)';
     else if (pct < 60) bar.style.background = '#e89a6d';
-    if (elapsed >= seconds * 1000 && !state.answered) {
+    if (elapsed >= seconds * 2000 && !state.answered) {
       clearInterval(state.timer);
       handleTimeout();
     }
@@ -697,10 +697,10 @@ function handleTimeout() {
   showFeedback(false, correct);
   highlightCorrectBtn(correct);
   document.querySelectorAll('.ans-btn').forEach(b => b.disabled = true);
-  state.totalTime += LEVELS[state.level].timePerQ * 1000;
+  state.totalTime += LEVELS[state.level].timePerQ * 2000;
   state.current++;
   document.getElementById('score-count').textContent = `${state.correctCount}/${state.current}`;
-  setTimeout(nextQuestion, 1200);
+  setTimeout(nextQuestion, 2200);
 }
 
 // ══ ANSWER ══
